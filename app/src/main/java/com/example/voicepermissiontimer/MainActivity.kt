@@ -200,6 +200,5 @@ override fun onDestroy() {
     speechRecognizer?.destroy()
     super.onDestroy()
 }
-```
 
 }
