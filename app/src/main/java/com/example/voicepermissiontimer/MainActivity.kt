@@ -1,3 +1,4 @@
+```kotlin
 package com.example.voicepermissiontimer
 
 import android.Manifest
@@ -6,6 +7,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -19,6 +22,7 @@ class MainActivity : Activity() {
     private lateinit var statusText: TextView
     private var speechRecognizer: SpeechRecognizer? = null
     private var timer: CountDownTimer? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +33,7 @@ class MainActivity : Activity() {
         }
 
         statusText = TextView(this).apply {
-            text = "اجازت دینے کے لیے آواز میں کہیں: اجازت دو"
+            text = "اجازت دینے کے لیے کہیں: اجازت دو"
             textSize = 22f
         }
 
@@ -46,7 +50,8 @@ class MainActivity : Activity() {
         setContentView(layout)
 
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             requestPermissions(
                 arrayOf(Manifest.permission.RECORD_AUDIO),
                 100
@@ -61,92 +66,134 @@ class MainActivity : Activity() {
             return
         }
 
+        timer?.cancel()
         speechRecognizer?.destroy()
 
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizer =
+            SpeechRecognizer.createSpeechRecognizer(this)
 
-        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+        speechRecognizer?.setRecognitionListener(
+            object : RecognitionListener {
 
-            override fun onReadyForSpeech(params: Bundle?) {
-                statusText.text = "میں سن رہا ہوں..."
+                override fun onReadyForSpeech(params: Bundle?) {
+                    statusText.text = "میں سن رہا ہوں... ابھی کہیں: اجازت دو"
+                }
+
+                override fun onBeginningOfSpeech() {
+                    statusText.text = "آواز سن رہا ہوں..."
+                }
+
+                override fun onResults(results: Bundle?) {
+
+                    val list = results?.getStringArrayList(
+                        SpeechRecognizer.RESULTS_RECOGNITION
+                    )
+
+                    val text =
+                        list?.firstOrNull()
+                            ?.lowercase(Locale.getDefault())
+                            ?: ""
+
+                    if (
+                        text.contains("اجازت دو") ||
+                        text.contains("اجازت ہے") ||
+                        text.contains("اجازت") ||
+                        text.contains("allow") ||
+                        text.contains("yes")
+                    ) {
+                        timer?.cancel()
+                        statusText.text =
+                            "اجازت مل گئی۔ موبائل استعمال کیا جا سکتا ہے۔"
+                    } else {
+                        statusText.text =
+                            "بات سمجھ نہیں آئی۔ دوبارہ کہیں: اجازت دو"
+
+                        restartListening()
+                    }
+                }
+
+                override fun onError(error: Int) {
+                    statusText.text =
+                        "آواز واضح نہیں سنی گئی۔ دوبارہ کوشش کریں..."
+
+                    restartListening()
+                }
+
+                override fun onEndOfSpeech() {
+                    statusText.text = "آواز مکمل ہوئی، سمجھ رہا ہوں..."
+                }
+
+                override fun onRmsChanged(rmsdB: Float) {}
+
+                override fun onBufferReceived(buffer: ByteArray?) {}
+
+                override fun onPartialResults(
+                    partialResults: Bundle?
+                ) {}
+
+                override fun onEvent(
+                    eventType: Int,
+                    params: Bundle?
+                ) {}
             }
+        )
 
-            override fun onResults(results: Bundle?) {
+        val intent =
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
 
-                val list = results?.getStringArrayList(
-                    SpeechRecognizer.RESULTS_RECOGNITION
+                putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
                 )
 
-                val text = list?.firstOrNull()?.lowercase(Locale.getDefault()) ?: ""
+                putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE,
+                    "ur-PK"
+                )
 
-                if (
-                    text.contains("اجازت دو") ||
-                    text.contains("اجازت ہے") ||
-                    text.contains("allow") ||
-                    text.contains("yes")
-                ) {
-                    timer?.cancel()
-                    statusText.text = "اجازت مل گئی۔ موبائل استعمال کیا جا سکتا ہے۔"
-                } else {
-                    statusText.text =
-                        "اجازت نہیں ملی۔ 1 منٹ بعد یہ ایپ بند ہو جائے گی۔"
+                putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
+                    "ur-PK"
+                )
 
-                    startOneMinuteTimer()
-                }
+                putExtra(
+                    RecognizerIntent.EXTRA_PARTIAL_RESULTS,
+                    true
+                )
+
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,
+                    10000L
+                )
+
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    10000L
+                )
+
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    10000L
+                )
             }
-
-            override fun onError(error: Int) {
-                statusText.text =
-                    "آواز سمجھ نہیں آئی۔ 1 منٹ کا timer شروع ہو گیا ہے۔"
-
-                startOneMinuteTimer()
-            }
-
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
-
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-            )
-            putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE,
-                Locale.getDefault()
-            )
-        }
 
         speechRecognizer?.startListening(intent)
     }
 
-    private fun startOneMinuteTimer() {
+    private fun restartListening() {
 
-        timer?.cancel()
+        handler.removeCallbacksAndMessages(null)
 
-        timer = object : CountDownTimer(60000, 1000) {
-
-            override fun onTick(millisUntilFinished: Long) {
-                val seconds = millisUntilFinished / 1000
-                statusText.text =
-                    "اجازت نہیں ملی۔ باقی وقت: $seconds سیکنڈ"
-            }
-
-            override fun onFinish() {
-                statusText.text = "وقت ختم ہو گیا۔"
-                finish()
-            }
-
-        }.start()
+        handler.postDelayed({
+            startListening()
+        }, 1000)
     }
 
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         timer?.cancel()
         speechRecognizer?.destroy()
         super.onDestroy()
     }
 }
+```
