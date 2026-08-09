@@ -147,7 +147,7 @@ private fun startListening() {
 
     intent.putExtra(
         RecognizerIntent.EXTRA_LANGUAGE,
-        "ur-PK" "English-USA"
+        "ur-PK"
     )
 
     intent.putExtra(
