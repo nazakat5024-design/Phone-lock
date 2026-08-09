@@ -17,7 +17,7 @@ import java.util.Locale
 
 class MainActivity : Activity() {
 
-```
+    
 private lateinit var statusText: TextView
 private var speechRecognizer: SpeechRecognizer? = null
 private val handler = Handler(Looper.getMainLooper())
@@ -61,9 +61,7 @@ private fun startListening() {
         statusText.text = "Voice Recognition دستیاب نہیں۔"
         return
     }
-
     speechRecognizer?.destroy()
-
     speechRecognizer =
         SpeechRecognizer.createSpeechRecognizer(this)
 
@@ -149,7 +147,7 @@ private fun startListening() {
 
     intent.putExtra(
         RecognizerIntent.EXTRA_LANGUAGE,
-        "ur-PK"
+        "ur-PK" "English-USA"
     )
 
     intent.putExtra(
@@ -197,6 +195,6 @@ override fun onDestroy() {
     speechRecognizer?.destroy()
     super.onDestroy()
 }
-```
+
 
 }
