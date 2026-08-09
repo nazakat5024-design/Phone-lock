@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
 import android.speech.RecognitionListener
@@ -21,7 +20,6 @@ class MainActivity : Activity() {
 ```
 private lateinit var statusText: TextView
 private var speechRecognizer: SpeechRecognizer? = null
-private var timer: CountDownTimer? = null
 private val handler = Handler(Looper.getMainLooper())
 
 override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +62,6 @@ private fun startListening() {
         return
     }
 
-    timer?.cancel()
     speechRecognizer?.destroy()
 
     speechRecognizer =
@@ -99,11 +96,8 @@ private fun startListening() {
                     text.contains("allow") ||
                     text.contains("yes")
                 ) {
-                    timer?.cancel()
-
                     statusText.text =
-                        "اجازت مل گئی۔ موبائل استعمال کیا جا سکتا ہے۔"
-
+                        "اجازت مل گئی۔"
                 } else {
                     statusText.text =
                         "بات سمجھ نہیں آئی۔ دوبارہ کہیں: اجازت دو"
@@ -124,20 +118,24 @@ private fun startListening() {
                     "آواز مکمل ہوئی، سمجھ رہا ہوں..."
             }
 
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) {
+            }
 
             override fun onBufferReceived(
                 buffer: ByteArray?
-            ) {}
+            ) {
+            }
 
             override fun onPartialResults(
                 partialResults: Bundle?
-            ) {}
+            ) {
+            }
 
             override fun onEvent(
                 eventType: Int,
                 params: Bundle?
-            ) {}
+            ) {
+            }
         }
     )
 
@@ -196,9 +194,9 @@ private fun restartListening() {
 
 override fun onDestroy() {
     handler.removeCallbacksAndMessages(null)
-    timer?.cancel()
     speechRecognizer?.destroy()
     super.onDestroy()
 }
+```
 
 }
